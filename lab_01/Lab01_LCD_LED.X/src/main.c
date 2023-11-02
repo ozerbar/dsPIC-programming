@@ -126,7 +126,7 @@ int main(){
     // Select internal instruction cycle clock
     // Disable Gated Timer mode
     // Clear timer register
-    // Select 1:64 Prescaler
+    // Select 1:256 Prescaler
     // Load the period value
     // Set Timer1 Interrupt Priority Level
     // Clear Timer1 Interrupt Flag
