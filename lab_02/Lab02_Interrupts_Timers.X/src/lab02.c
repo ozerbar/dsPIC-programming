@@ -55,14 +55,15 @@ void initialize_timer()
     IPC1bits.T2IP = 0x02;
     IPC0bits.T1IP = 0x01;
     // Clear Interrupt Flags
-    CLEARBIT(IFS1bits.T2IF);
+    CLEARBIT(IFS0bits.T2IF);
     CLEARBIT(IFS0bits.T1IF);
     // Enable Interrupts
-    SETBIT(IEC1bits.T2IE);
+    SETBIT(IEC0bits.T2IE);
     SETBIT(IEC0bits.T1IE);
     // Enable the Timers
     SETBIT(T2CONbits.TON);
     SETBIT(T1CONbits.TON);
+    SETBIT(T3CONbits.TON);
 
 }
 
@@ -94,7 +95,7 @@ void timer_loop()
             TOGGLELED(LED3_PORT);
             
             uint16_t intervalCount = TMR3;
-            float intervalNumerical = intervalCount/128000;
+            float intervalNumerical = (intervalCount)/12800.0;
 
             lcd_locate(0, 7);
             lcd_printf("c=%u, d=%.4f", intervalCount,intervalNumerical);
@@ -115,5 +116,5 @@ void __attribute__((__interrupt__, __shadow__, __auto_psv__)) _T2Interrupt(void)
 { // invoked every 2 ms
     timer2Count++;
     TOGGLELED(LED1_PORT);
-    CLEARBIT(IFS1bits.T2IF);
+    CLEARBIT(IFS0bits.T2IF);
 }
