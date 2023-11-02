@@ -12,8 +12,8 @@
 
 #define FCY_EXT 32768
 
-uint16_t timer1Count = 0;
-uint16_t timer2Count = 0;
+volatile uint16_t timer1Count = 0;
+volatile uint16_t timer2Count = 0;
 
 void initialize_timer()
 {
@@ -115,5 +115,5 @@ void __attribute__((__interrupt__, __shadow__, __auto_psv__)) _T2Interrupt(void)
 { // invoked every 2 ms
     timer2Count++;
     TOGGLELED(LED1_PORT);
-    CLEARBIT(IFS0bits.T2IF);
+    CLEARBIT(IFS1bits.T2IF);
 }
