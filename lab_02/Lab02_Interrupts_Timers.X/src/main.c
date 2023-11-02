@@ -23,10 +23,7 @@ int main(){
     //Init LCD and LEDs
     lcd_initialize();
     led_init();
-    
-    CLEARBIT(LED1_TRIS);
-    CLEARBIT(LED2_TRIS);
-	CLEARBIT(LED3_TRIS);
+
 
     // Clear the Screen and reset the cursor
     lcd_clear();

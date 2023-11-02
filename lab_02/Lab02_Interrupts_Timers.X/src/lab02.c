@@ -55,10 +55,10 @@ void initialize_timer()
     IPC1bits.T2IP = 0x02;
     IPC0bits.T1IP = 0x01;
     // Clear Interrupt Flags
-    CLEARBIT(IFS0bits.T2IF);
+    CLEARBIT(IFS1bits.T2IF);
     CLEARBIT(IFS0bits.T1IF);
     // Enable Interrupts
-    SETBIT(IEC0bits.T2IE);
+    SETBIT(IEC1bits.T2IE);
     SETBIT(IEC0bits.T1IE);
     // Enable the Timers
     SETBIT(T2CONbits.TON);
@@ -82,20 +82,24 @@ void timer_loop()
     while(TRUE)
     {
         i++;
-        if(i%2000 == 0)
+        if(i == 2000)
         {
             minCount = timer1Count/60;
             secCount = timer1Count%60;
             msCount = timer2Count*2;
             
             lcd_locate(0, 6);
-            lcd_printf("%u:%u:%u",minCount,secCount,msCount);
+            lcd_printf("%02u:%02u.%03u",minCount,secCount,msCount);
             
             TOGGLELED(LED3_PORT);
             
+            uint16_t intervalCount = TMR3;
+            float intervalNumerical = intervalCount/128000;
+
             lcd_locate(0, 7);
-            lcd_printf("c=%u ", TMR3);
+            lcd_printf("c=%u, d=%.4f", intervalCount,intervalNumerical);
             TMR3 = 0x00;
+            i=0;
         }
     }
 }
