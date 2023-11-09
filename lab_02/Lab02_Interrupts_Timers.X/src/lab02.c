@@ -10,10 +10,15 @@
 #include "lcd.h"
 #include "led.h"
 
+
+
 #define FCY_EXT 32768
 
 volatile uint16_t timer1Count = 0;
 volatile uint16_t timer2Count = 0;
+
+
+
 
 void initialize_timer()
 {
@@ -44,7 +49,7 @@ void initialize_timer()
     // T1: Set External Clock Input Synchronization -> no sync
     T1CONbits.TSYNC = 0;
     // Load Timer Periods
-    PR2 = 100;
+    PR2 = 100; 
     PR1 = 128;
     PR3 = 0xFFFF;
     // Reset Timer Values
@@ -85,15 +90,6 @@ void timer_loop()
         i++;
         if(i == 2000)
         {
-            minCount = timer1Count/60;
-            secCount = timer1Count%60;
-            msCount = timer2Count*2;
-            
-            lcd_locate(0, 6);
-            lcd_printf("%02u:%02u.%03u",minCount,secCount,msCount);
-            
-            TOGGLELED(LED3_PORT);
-            
             uint16_t intervalCount = TMR3;
             float intervalNumerical = (intervalCount)/12800.0;
 
@@ -101,6 +97,18 @@ void timer_loop()
             lcd_printf("c=%u, d=%.4f", intervalCount,intervalNumerical);
             TMR3 = 0x00;
             i=0;
+            
+            
+            minCount = timer1Count/60;
+            secCount = timer1Count%60;
+            msCount = timer2Count*2%1000;
+            
+            lcd_locate(0, 6);
+            lcd_printf("%02u:%02u.%03u",minCount,secCount,msCount);
+            
+            TOGGLELED(LED3_PORT);
+            
+            
         }
     }
 }
