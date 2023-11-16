@@ -32,7 +32,7 @@ int main(){
     dac_initialize();
     
     // Initialize Timers
-    timer_initialize();
+    //timer_initialize();
     
     // Start Lab03 Main Program
     main_loop();
