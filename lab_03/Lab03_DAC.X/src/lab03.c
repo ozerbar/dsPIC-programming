@@ -63,7 +63,7 @@ void dac_initialize()
     Nop();
 }
 
-void dac_output1(uint8_t data[])
+void dac_output(uint8_t data[])
 {
     CLEARBIT(DAC_CS_PORT);
     Nop();
@@ -155,22 +155,22 @@ void main_loop()
     //dac_initialize();
     uint8_t data1[16] = {0,0,0,1,0,0,1,1,1,1,1,0,1,0,0,0};
     uint8_t data2[16] = {0,0,0,1,1,0,0,1,1,1,0,0,0,1,0,0};
-    uint8_t data3[16] = {0,0,0,1,1,1,0,1,1,0,1,0,1,1,0,0};
+    uint8_t data3[16] = {0,0,0,1,1,1,0,0,1,1,1,0,0,1,0,0};
     //dac_output(data);
     while(TRUE)
     {
         dac_output(data1);
-        timer_initialize_start(128);
+        timer_initialize_start(64);
         while(FLAG_WAIT_COMPLETE == 0);
         FLAG_WAIT_COMPLETE = 0;
         
         dac_output(data2);
-        timer_initialize_start(512);
+        timer_initialize_start(256);
         while(FLAG_WAIT_COMPLETE == 0);
         FLAG_WAIT_COMPLETE = 0;
         
         dac_output(data3);
-        timer_initialize_start(256);
+        timer_initialize_start(128);
         while(FLAG_WAIT_COMPLETE == 0);
         FLAG_WAIT_COMPLETE = 0;
 
