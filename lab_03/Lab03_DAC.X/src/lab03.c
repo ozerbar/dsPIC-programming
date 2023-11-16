@@ -36,11 +36,46 @@ void dac_initialize()
     // set AN10, AN11 AN13 to digital mode
     // this means AN10 will become RB10, AN11->RB11, AN13->RB13
     // see datasheet 11.3
-    
+    SETBIT(DAC_SDI_AD1CFG);
+    SETBIT(DAC_SCK_AD1CFG);
+    SETBIT(DAC_LDAC_AD1CFG);
+    SETBIT(DAC_SDI_AD2CFG);
+    SETBIT(DAC_SCK_AD2CFG);
+    SETBIT(DAC_LDAC_AD2CFG);
     // set RD8, RB10, RB11, RB13 as output pins
-    
+    CLEARBIT(DAC_CS_TRIS);
+    CLEARBIT(DAC_SDI_TRIS);
+    CLEARBIT(DAC_SCK_TRIS);
+    CLEARBIT(DAC_LDAC_TRIS);
     // set default state: CS=??, SCK=??, SDI=??, LDAC=??
-    
+    SETBIT(DAC_CS_PORT);
+    SETBIT(DAC_SCK_PORT);
+    CLEARBIT(DAC_SDI_PORT);
+    SETBIT(DAC_LDAC_PORT);
+}
+
+void dac_output1()
+{
+    CLEARBIT(DAC_CS_PORT);
+
+    uint8_t data[16] = {0,0,0,1,0,1,1,1,1,1,0,0,1,0,0,0};
+    uint8_t i = 0;
+    for(i=0 ; i<16 ; i++)
+    {
+        if(data[i]==0)
+            CLEARBIT(DAC_SDI_PORT);
+        else
+            SETBIT(DAC_SDI_PORT);
+
+        CLEARBIT(DAC_SCK_PORT);
+        SETBIT(DAC_SCK_PORT);
+
+    }
+
+    SETBIT(DAC_CS_PORT);
+    CLEARBIT(DAC_LDAC_PORT);
+    SETBIT(DAC_LDAC_PORT);
+
 }
 
 /*
@@ -81,8 +116,12 @@ void main_loop()
     lcd_locate(0, 1);
     lcd_printf("Group: GroupName");
     
+    dac_initialize();
+    dac_output1();
     while(TRUE)
     {
+
+
         // main loop code
     }
 }
