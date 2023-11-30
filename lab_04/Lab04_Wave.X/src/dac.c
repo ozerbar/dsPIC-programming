@@ -27,14 +27,59 @@ void dac_initialize()
     // set AN10, AN11 AN13 to digital mode
     // this means AN10 will become RB10, AN11->RB11, AN13->RB13
     // see datasheet 11.3
-    
+    SETBIT(DAC_SDI_AD1CFG);
+    SETBIT(DAC_SCK_AD1CFG);
+    SETBIT(DAC_LDAC_AD1CFG);
+    SETBIT(DAC_SDI_AD2CFG);
+    SETBIT(DAC_SCK_AD2CFG);
+    SETBIT(DAC_LDAC_AD2CFG);
+    Nop();
     // set RD8, RB10, RB11, RB13 as output pins
-    
+    CLEARBIT(DAC_CS_TRIS);
+    CLEARBIT(DAC_SDI_TRIS);
+    CLEARBIT(DAC_SCK_TRIS);
+    CLEARBIT(DAC_LDAC_TRIS);
+    Nop();    
     // set default state: CS=on, SCK=off, SDI=off, LDAC=on
-
+    SETBIT(DAC_CS_PORT);
+    Nop();
+    CLEARBIT(DAC_SCK_PORT);
+    Nop();
+    CLEARBIT(DAC_SDI_PORT);
+    Nop();
+    SETBIT(DAC_LDAC_PORT);
+    Nop();
 }
 
 void dac_convert_milli_volt(uint16_t milliVolt)
 {
+    CLEARBIT(DAC_CS_PORT);
+    Nop();
     
+    voltage &= 0b0001111111111111;
+    voltage |= 0b0001000000000000;
+    
+
+    uint8_t i = 0;
+    for(i=0 ; i<16 ; i++)
+    {
+        DAC_SDI_PORT =  1& (voltage >> (15-i));
+
+        Nop();
+        CLEARBIT(DAC_SCK_PORT);
+        Nop();
+        Nop();
+        SETBIT(DAC_SCK_PORT);
+        Nop();
+
+    }
+
+    SETBIT(DAC_CS_PORT);
+    Nop();
+    CLEARBIT(DAC_SDI_PORT);
+    Nop();
+    CLEARBIT(DAC_LDAC_PORT);
+    Nop();
+    SETBIT(DAC_LDAC_PORT);
+    Nop();
 }
