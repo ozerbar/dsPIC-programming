@@ -55,7 +55,7 @@ void dac_initialize()
     // set default state: CS=??, SCK=??, SDI=??, LDAC=??
     SETBIT(DAC_CS_PORT);
     Nop();
-    SETBIT(DAC_SCK_PORT);
+    CLEARBIT(DAC_SCK_PORT);
     Nop();
     CLEARBIT(DAC_SDI_PORT);
     Nop();
@@ -75,7 +75,9 @@ void dac_output(uint16_t voltage)
     uint8_t i = 0;
     for(i=0 ; i<16 ; i++)
     {
-        if( (voltage >> (15-i)) %2 == 0)
+        DAC_SDI_PORT =  1& (voltage >> (15-i));
+        
+        /*if( (voltage >> (15-i)) %2 == 0)
             CLEARBIT(DAC_SDI_PORT);
         else
             SETBIT(DAC_SDI_PORT);
@@ -83,8 +85,8 @@ void dac_output(uint16_t voltage)
 //        if(data[i]==0)
 //            CLEARBIT(DAC_SDI_PORT);
 //        else
-//            SETBIT(DAC_SDI_PORT);
-//        Nop();
+//            SETBIT(DAC_SDI_PORT);*/
+        Nop();
         CLEARBIT(DAC_SCK_PORT);
         Nop();
         Nop();
@@ -169,18 +171,24 @@ void main_loop()
     //dac_output(data);
     while(TRUE)
     {
+        //voltage = 1000;
+        //voltage = (1/3.3)*(2^12-1);
         voltage = 1000;
         dac_output(voltage);
         timer_initialize_start(64);
         while(FLAG_WAIT_COMPLETE == 0);
         FLAG_WAIT_COMPLETE = 0;
         
+        //voltage = 2500;
+        //voltage = (2.5/3.3)*(2^12-1);
         voltage = 2500;
         dac_output(voltage);
         timer_initialize_start(256);
         while(FLAG_WAIT_COMPLETE == 0);
         FLAG_WAIT_COMPLETE = 0;
         
+        //voltage = 3300;
+        //voltage = (3.3/3.3)*(2^12-1);
         voltage = 3300;
         dac_output(voltage);
         timer_initialize_start(128);
