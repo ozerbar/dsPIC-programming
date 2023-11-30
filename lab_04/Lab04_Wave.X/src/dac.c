@@ -51,7 +51,7 @@ void dac_initialize()
     Nop();
 }
 
-void dac_convert_milli_volt(uint16_t milliVolt)
+void dac_convert_milli_volt(uint16_t voltage)
 {
     CLEARBIT(DAC_CS_PORT);
     Nop();
