@@ -1,26 +1,35 @@
 #include "dac.h"
 
-// tristate register
+#define FCY 12800000UL
+#include <libpic30.h>
+
+#include "types.h"
+
+
+/*
+ * DAC code
+ */
+
 #define DAC_CS_TRIS TRISDbits.TRISD8
 #define DAC_SDI_TRIS TRISBbits.TRISB10
 #define DAC_SCK_TRIS TRISBbits.TRISB11
 #define DAC_LDAC_TRIS TRISBbits.TRISB13
-
-// port register
+    
 #define DAC_CS_PORT PORTDbits.RD8
 #define DAC_SDI_PORT PORTBbits.RB10
 #define DAC_SCK_PORT PORTBbits.RB11
 #define DAC_LDAC_PORT PORTBbits.RB13
 
-// analog to digital converter 1 port configuration register
 #define DAC_SDI_AD1CFG AD1PCFGLbits.PCFG10
 #define DAC_SCK_AD1CFG AD1PCFGLbits.PCFG11
 #define DAC_LDAC_AD1CFG AD1PCFGLbits.PCFG13
 
-// analog to digital converter 2 port configuration register
 #define DAC_SDI_AD2CFG AD2PCFGLbits.PCFG10
 #define DAC_SCK_AD2CFG AD2PCFGLbits.PCFG11
 #define DAC_LDAC_AD2CFG AD2PCFGLbits.PCFG13
+
+//volatile uint8_t FLAG_WAIT_COMPLETE =0;
+
 
 void dac_initialize()
 {
@@ -39,8 +48,8 @@ void dac_initialize()
     CLEARBIT(DAC_SDI_TRIS);
     CLEARBIT(DAC_SCK_TRIS);
     CLEARBIT(DAC_LDAC_TRIS);
-    Nop();    
-    // set default state: CS=on, SCK=off, SDI=off, LDAC=on
+    Nop();
+    // set default state: CS=??, SCK=??, SDI=??, LDAC=??
     SETBIT(DAC_CS_PORT);
     Nop();
     CLEARBIT(DAC_SCK_PORT);
@@ -64,7 +73,16 @@ void dac_convert_milli_volt(uint16_t voltage)
     for(i=0 ; i<16 ; i++)
     {
         DAC_SDI_PORT =  1& (voltage >> (15-i));
-
+        
+        /*if( (voltage >> (15-i)) %2 == 0)
+            CLEARBIT(DAC_SDI_PORT);
+        else
+            SETBIT(DAC_SDI_PORT);
+        Nop();
+//        if(data[i]==0)
+//            CLEARBIT(DAC_SDI_PORT);
+//        else
+//            SETBIT(DAC_SDI_PORT);*/
         Nop();
         CLEARBIT(DAC_SCK_PORT);
         Nop();
@@ -82,4 +100,5 @@ void dac_convert_milli_volt(uint16_t voltage)
     Nop();
     SETBIT(DAC_LDAC_PORT);
     Nop();
+
 }

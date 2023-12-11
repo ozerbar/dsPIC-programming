@@ -31,7 +31,7 @@ int main(){
     lcd_locate(0, 0);
     
     // Initialize Timers
-    timer_initialize();
+    //timer_initialize();
     
     // Start Lab03 Main Program
     main_loop();
