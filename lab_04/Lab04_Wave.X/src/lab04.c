@@ -17,11 +17,11 @@
 #include "dac.h"
 
 // signal parameter
-#define WAVE_FREQUENCY 1
-#define SAMPLE_RATE 32
+#define WAVE_FREQUENCY 10
+#define SAMPLE_RATE 512
 #define WAVE_MIN_VOLTAGE 1000
 #define WAVE_MAX_VOLTAGE 3000
-#define TIMER_PERIOD ((32768/256)/SAMPLE_RATE)
+#define TIMER_PERIOD (32768/SAMPLE_RATE)
 
 
 volatile uint8_t FLAG_WAIT_COMPLETE =0;
@@ -42,7 +42,7 @@ void timer_initialize()
 {
     __builtin_write_OSCCONL(OSCCONL | 2);
     CLEARBIT(T1CONbits.TON);
-    T1CONbits.TCKPS = TCKPS_256;
+    T1CONbits.TCKPS = TCKPS_1;
     SETBIT(T1CONbits.TCS);
     CLEARBIT(T1CONbits.TGATE);
     T1CONbits.TSYNC = 0;
@@ -59,7 +59,7 @@ void timer_initialize()
 void __attribute__((__interrupt__, __shadow__, __auto_psv__)) _T1Interrupt(void)
 {
     COUNT_IN ++;
-    if(COUNT_IN == SAMPLE_RATE )
+    if(COUNT_IN == SAMPLE_RATE* WAVE_FREQUENCY)
         COUNT_IN = 0;
     
     FLAG_WAIT_COMPLETE = START_NEXT_DAC;
