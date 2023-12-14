@@ -18,10 +18,10 @@
 
 // signal parameter
 #define WAVE_FREQUENCY 10
-#define SAMPLE_RATE 512
+#define SAMPLE_RATE 500
 #define WAVE_MIN_VOLTAGE 1000
 #define WAVE_MAX_VOLTAGE 3000
-#define TIMER_PERIOD (32768/SAMPLE_RATE)
+#define TIMER_PERIOD ((12800000/256)/SAMPLE_RATE)
 
 
 volatile uint8_t FLAG_WAIT_COMPLETE =0;
@@ -41,22 +41,21 @@ volatile uint16_t COUNT_IN =0;
 void timer_initialize()
 {
     __builtin_write_OSCCONL(OSCCONL | 2);
-    CLEARBIT(T1CONbits.TON);
-    T1CONbits.TCKPS = TCKPS_1;
-    SETBIT(T1CONbits.TCS);
-    CLEARBIT(T1CONbits.TGATE);
-    T1CONbits.TSYNC = 0;
-    PR1 = TIMER_PERIOD;
-    TMR1 = 0x00;
-    IPC0bits.T1IP = 0x01;
-    CLEARBIT(IFS0bits.T1IF);
-    SETBIT(IEC0bits.T1IE);
-    SETBIT(T1CONbits.TON);
+    CLEARBIT(T3CONbits.TON);
+    T3CONbits.TCKPS = TCKPS_256;
+    CLEARBIT(T3CONbits.TCS);
+    CLEARBIT(T3CONbits.TGATE);
+    PR3 = TIMER_PERIOD;
+    TMR3 = 0x00;
+    IPC2bits.T3IP = 0x01;
+    CLEARBIT(IFS0bits.T3IF);
+    SETBIT(IEC0bits.T3IE);
+    SETBIT(T3CONbits.TON);
 }
 
 
 // interrupt service routine?
-void __attribute__((__interrupt__, __shadow__, __auto_psv__)) _T1Interrupt(void)
+void __attribute__((__interrupt__, __shadow__, __auto_psv__)) _T3Interrupt(void)
 {
     COUNT_IN ++;
     if(COUNT_IN == SAMPLE_RATE* WAVE_FREQUENCY)
@@ -64,7 +63,7 @@ void __attribute__((__interrupt__, __shadow__, __auto_psv__)) _T1Interrupt(void)
     
     FLAG_WAIT_COMPLETE = START_NEXT_DAC;
     
-    CLEARBIT(IFS0bits.T1IF);
+    CLEARBIT(IFS0bits.T3IF);
 }
 
 
@@ -92,7 +91,7 @@ void main_loop()
         uint16_t step = COUNT_IN;
         lcd_printf("COUNT: %u", step);
         
-        float voltage_float= sin(3.14159265358979323846*2*WAVE_FREQUENCY*step/SAMPLE_RATE) * (float)(WAVE_MAX_VOLTAGE -WAVE_MIN_VOLTAGE) / 2 + (float)(WAVE_MAX_VOLTAGE -WAVE_MIN_VOLTAGE) /2 ;
+        float voltage_float= sin(3.14159265358979323846*2*WAVE_FREQUENCY*step/SAMPLE_RATE) * (float)(WAVE_MAX_VOLTAGE -WAVE_MIN_VOLTAGE) / 2 + (float)(WAVE_MAX_VOLTAGE +WAVE_MIN_VOLTAGE) /2 ;
         
         uint16_t voltage = (uint16_t)voltage_float;
 
