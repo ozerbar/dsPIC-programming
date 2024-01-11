@@ -5,7 +5,7 @@
 #define INTERNAL_CLOCK 0
 #define EXTERNAL_CLOCK 1
 
-uint16_t calc_timer_value(uint8_t clockSource, uint8_t preScaler, uint16_t periodMS)
+uint16_t calc_timer_value(uint8_t clockSource, uint8_t preScaler, float periodMS)
 {
     uint16_t timerValue = 0;
 
@@ -21,7 +21,7 @@ uint16_t calc_timer_value(uint8_t clockSource, uint8_t preScaler, uint16_t perio
 
 void main()
 {
-    uint16_t a_timer = calc_timer_value(INTERNAL_CLOCK, 64, 20);
+    uint16_t a_timer = calc_timer_value(INTERNAL_CLOCK, 64, 0.9);
     printf("timer1 %u\n", a_timer);
 
 }
