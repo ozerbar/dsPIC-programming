@@ -32,6 +32,7 @@
 #define DAC_LDAC_AD2CFG AD2PCFGLbits.PCFG13
 
 volatile uint8_t FLAG_WAIT_COMPLETE =0;
+volatile uint16_t COUNT_IN =0;
 
 
 void dac_initialize()
@@ -76,16 +77,7 @@ void dac_output(uint16_t voltage)
     for(i=0 ; i<16 ; i++)
     {
         DAC_SDI_PORT =  1& (voltage >> (15-i));
-        
-        /*if( (voltage >> (15-i)) %2 == 0)
-            CLEARBIT(DAC_SDI_PORT);
-        else
-            SETBIT(DAC_SDI_PORT);
-        Nop();
-//        if(data[i]==0)
-//            CLEARBIT(DAC_SDI_PORT);
-//        else
-//            SETBIT(DAC_SDI_PORT);*/
+
         Nop();
         CLEARBIT(DAC_SCK_PORT);
         Nop();
@@ -145,6 +137,7 @@ void timer_initialize_start(int interval)
 void __attribute__((__interrupt__, __shadow__, __auto_psv__)) _T1Interrupt(void)
 {
     FLAG_WAIT_COMPLETE = 1;
+    COUNT_IN ++;
     CLEARBIT(IFS0bits.T1IF);
 }
 
