@@ -25,15 +25,36 @@
 
 #define TOUCHSCREEN_COOR_X 0
 #define TOUCHSCREEN_COOR_Y 1
+
 #define SERVO_X 0
 #define SERVO_Y 1
 
-volatile uint8_t FLAG_WAIT_COMPLETE =0;
+#define INTERNAL_CLOCK 0
+#define EXTERNAL_CLOCK 1
+
+
+volatile uint8_t FLAG_5_SECOND = 0;
+volatile uint8_t FLAG_10_MS = 0;
+
+uint16_t calc_timer_value(uint8_t clockSource, uint8_t preScaler, float periodMS)
+{
+    uint16_t timerValue = 0;
+
+
+    if(clockSource == INTERNAL_CLOCK)
+        timerValue = (uint16_t)( (float)(12800000) / (float)(preScaler) * (float)(periodMS) / 1000.0 );
+    else
+        timerValue = (uint16_t)( (float)(32768) / (float)(preScaler) * (float)(periodMS) / 1000.0 );
+    
+    return timerValue;
+
+}
 
 /*
  * touch screen code
  */
 
+// initializes and configures the touchscreen
 void touchscreen_initalize()
 {
     // Set up the I/O pins E1, E2, E3 to be output pins
@@ -41,33 +62,27 @@ void touchscreen_initalize()
     CLEARBIT(TRISEbits.TRISE2); // I/O pin set to output
     CLEARBIT(TRISEbits.TRISE3); // I/O pin set to output
 
-    //For example, setting E1=1, E2=1, E3=0 puts touchscreen into the standby mode
+    //setting E1=1, E2=1, E3=0 puts touchscreen into the standby mode
     SETBIT(PORTEbits.RE1);
     SETBIT(PORTEbits.RE2);
     CLEARBIT(PORTEbits.RE3);
 }
 
-
-/*
-touchscreen’s X-coordinate: AN15 
-touchscreen’s Y-coordinate: AN9. There is also a circuit
-designed to control the touchscreen measurement. This circuit is controlled through three I/O pins
-E1, E2, E3. For example, setting E1=1, E2=1, E3=0 puts touchscreen into the standby mode. */
-/*
+// changes the dimension in which the touchscreen reads from
 void touchscreen_config_direction(uint8_t direction)
 {
     
     if(direction==TOUCHSCREEN_COOR_X)
     {
-        // Set up the I/O pins E1, E2, E3 so that the touchscreen X-coordinate pin
-        // connects to the ADC
+        // Set up the I/O pins E1, E2, E3 so that the 
+        // touchscreen X-coordinate pin connects to the ADC
         CLEARBIT(PORTEbits.RE1);
         SETBIT(PORTEbits.RE2);
         SETBIT(PORTEbits.RE3);
     }
     else
     {
-        // Y connects to the ADC
+        // touchscreen Y-coordinate pin connects to the ADC
         SETBIT(PORTEbits.RE1);
         CLEARBIT(PORTEbits.RE2);
         CLEARBIT(PORTEbits.RE3);
@@ -82,11 +97,11 @@ void touchscreen_config_direction(uint8_t direction)
 
     if(direction==TOUCHSCREEN_COOR_X)
     {
-        CLEARBIT(AD1PCFGHbits.PCFG15); // Set AD1 AN15 input pin as analog
+        CLEARBIT(AD1PCFGLbits.PCFG15); // Set AD1 AN15 input pin as analog
     }
     else
     {
-        CLEARBIT(AD1PCFGHbits.PCFG9); // Set AD1 AN9 input pin as analog
+        CLEARBIT(AD1PCFGLbits.PCFG9); // Set AD1 AN9 input pin as analog
     }
 
     //Configure AD1CON1
@@ -121,6 +136,7 @@ void touchscreen_config_direction(uint8_t direction)
 
 }
 
+// reads the current ball position
 uint16_t touchscreen_read_result() //should not be read, there's return value
 {
     //AD1CHS0bits.CH0SA = 0x014;
@@ -128,38 +144,31 @@ uint16_t touchscreen_read_result() //should not be read, there's return value
     while(!AD1CON1bits.DONE);       // Start to sample
     CLEARBIT(AD1CON1bits.DONE);     // Wait for conversion to finish
     return ADC1BUF0;                // Return sample
-}*/
+}
 
 
+
+/*
+ * servo code
+ */
+
+// initializes and configures the servos
 void servo_initalize(uint8_t servoNum)
 {
-    //The following code sets up OC8 to work in PWM mode and be controlled by Timer 2. When
-    //operating, the OC8 pin will be set to high for 5ms every 40ms.
+    //PWM mode, timer period 20ms
     // Setup Timer 2 to control servo X, OC8
     // Setup Timer 3 to control servo Y, OC7
     if(servoNum == SERVO_X)
     {
-        CLEARBIT(T2CONbits.TON);
-        CLEARBIT(T2CONbits.TCS);
-        CLEARBIT(T2CONbits.TGATE);
-        TMR2 = 0x00;
-        T2CONbits.TCKPS = 0b10;
-        CLEARBIT(IFS0bits.T2IF);
-        CLEARBIT(IEC0bits.T2IE);
-        PR2 = 4000;
-        // Disable Timer
-        // Select internal instruction cycle clock
-        // Disable Gated Timer mode
-        // Clear timer register
-        // Select 1:64 Prescaler
-        // Clear Timer2 interrupt status flag
-        // Disable Timer2 interrupt enable control bit
-        // Set timer period 40 ms:
-        // 8000 = 40*10^-3 * 12.8*10^6 * 1/64
-        // Setup OC8
+        CLEARBIT(T2CONbits.TON);        // Disable Timer
+        CLEARBIT(T2CONbits.TCS);        // Select internal instruction cycle clock
+        CLEARBIT(T2CONbits.TGATE);      // Disable Gated Timer mode
+        TMR2 = 0x00;                    // Clear timer register
+        T2CONbits.TCKPS = 0b10;         // Select 1:64 Prescaler
+        CLEARBIT(IFS0bits.T2IF);        // Clear Timer2 interrupt status flag
+        CLEARBIT(IEC0bits.T2IE);        // Disable Timer2 interrupt enable control bit
+        PR2 = calc_timer_value(INTERNAL_CLOCK, 64, 20);    // Set timer period 20 ms:
         CLEARBIT(TRISDbits.TRISD7); // Set OC8 as output
-
-        // Turn Timer 2 on
     }
     else
     {
@@ -170,58 +179,44 @@ void servo_initalize(uint8_t servoNum)
         T3CONbits.TCKPS = 0b10;
         CLEARBIT(IFS0bits.T3IF);
         CLEARBIT(IEC0bits.T3IE);
-        PR3 = 4000;
-        // Disable Timer
-        // Select internal instruction cycle clock
-        // Disable Gated Timer mode
-        // Clear timer register
-        // Select 1:64 Prescaler
-        // Clear Timer2 interrupt status flag
-        // Disable Timer2 interrupt enable control bit
-        // Set timer period 40 ms:
-        // 8000 = 40*10^-3 * 12.8*10^6 * 1/64
-        // Setup OC8
+        PR3 = calc_timer_value(INTERNAL_CLOCK, 64, 20);
         CLEARBIT(TRISDbits.TRISD6); // Set OC7 as output
-
-        // Turn Timer 2 on
     }
-
-    
-    
-    
-
 }
 
+// sets the duty cycle of the servo
 void servo_set_duty_cycle(uint8_t servoNum, uint16_t dutyCycle)
 {
     if(servoNum == SERVO_X)
     {
 
-        OC8R = dutyCycle;
-        // Set the initial duty cycle to 5 ms
-        OC8RS = dutyCycle;
-        // Load OCRS: next pwm duty cycle
-        OC8CON = 0x0006;
-        // Set OC8: PWM, no fault check, Timer2
-        SETBIT(T2CONbits.TON);
-        // Turn Timer 2 on
+        OC8R = dutyCycle;       // Set the initial duty cycle        
+        OC8RS = dutyCycle;      // Load OCRS: next pwm duty cycle        
+        OC8CON = 0x0006;        // Set OC8: PWM, no fault check, Timer2
+        SETBIT(T2CONbits.TON);  // Turn Timer 2 on        
     }
     else
     {
-
-        OC7R = dutyCycle;
-        // Set the initial duty cycle to 5 ms
-        OC7RS = dutyCycle;
-        // Load OCRS: next pwm duty cycle
-        OC7CON = 0x000e;
-        // Set OC8: PWM, no fault check, Timer2
-        SETBIT(T3CONbits.TON);
-        // Turn Timer 2 on
+        OC7R = dutyCycle;       // Set the initial duty cycle
+        OC7RS = dutyCycle;      // Load OCRS: next pwm duty cycle
+        OC7CON = 0x000e;        // Set OC8: PWM, no fault check, Timer3
+        SETBIT(T3CONbits.TON);  // Turn Timer 3 on
     }
 }
 
+// helper function
+// actuate servo X and Y to rotate designated angle
+void servo_rotate_X_and_Y(float servoXPauseMS, float servoXPauseMS)
+{
+    servo_initalize(0);
+    servo_set_duty_cycle(0, calc_timer_value(INTERNAL_CLOCK, 64, 20.0-servoXPauseMS));
+    servo_initalize(1);
+    servo_set_duty_cycle(1, calc_timer_value(INTERNAL_CLOCK, 64, 20.0-servoYPauseMS));
+}
 
-void timer_initialize_start(int interval)
+
+//initalize and start timer 1
+void timer1_initialize_start(float intervalMS)
 {
     // Enable RTC Oscillator -> this effectively does OSCCONbits.LPOSCEN = 1
     // but the OSCCON register is lock protected. That means you would have to 
@@ -233,11 +228,11 @@ void timer_initialize_start(int interval)
     __builtin_write_OSCCONL(OSCCONL | 2);
     // configure timer
     CLEARBIT(T1CONbits.TON);
-    T1CONbits.TCKPS = 0b11;
+    T1CONbits.TCKPS = 0b11;     // prescaler 256
     SETBIT(T1CONbits.TCS);
     CLEARBIT(T1CONbits.TGATE);
     T1CONbits.TSYNC = 0;
-    PR1 = interval;
+    PR1 = calc_timer_value(EXTERNAL_CLOCK, 256, intervalMS);
     TMR1 = 0x00;
     IPC0bits.T1IP = 0x01;
     CLEARBIT(IFS0bits.T1IF);
@@ -245,12 +240,55 @@ void timer_initialize_start(int interval)
     SETBIT(T1CONbits.TON);
 }
 
-// interrupt service routine?
+// interrupt service routine for timer 1
 void __attribute__((__interrupt__, __shadow__, __auto_psv__)) _T1Interrupt(void)
 {
-    FLAG_WAIT_COMPLETE = 1;
+    FLAG_5_SECOND = 1;
     CLEARBIT(IFS0bits.T1IF);
 }
+
+//initalize and start timer 4
+void timer4_initialize_start(float intervalMS)
+{
+    CLEARBIT(T4CONbits.TON);    
+    CLEARBIT(T4CONbits.TCS);        // Select internal instruction cycle clock
+    CLEARBIT(T4CONbits.TGATE);
+    TMR4 = 0x00;
+    T4CONbits.TCKPS = 0b11;         // prescaler 256
+    PR4 = calc_timer_value(INTERNAL_CLOCK, 256, intervalMS);
+    IPC6bits.T4IP = 0x01;
+    CLEARBIT(IFS1bits.T4IF);
+    SETBIT(IEC1bits.T4IE);
+    SETBIT(T4CONbits.TON);
+
+    FLAG_10_MS = 0;
+}
+
+// interrupt service routine for timer 1
+void __attribute__((__interrupt__, __shadow__, __auto_psv__)) _T4Interrupt(void)
+{
+    FLAG_10_MS = 1;
+    CLEARBIT(IFS0bits.T1IF);
+}
+
+void printLocationTouchScreen()
+{
+    touchscreen_config_direction(TOUCHSCREEN_COOR_X);
+    timer4_initialize_start(10);
+    while( FLAG_10_MS == 0 );
+    uint16_t xLocation = touchscreen_read_result();
+
+    touchscreen_config_direction(TOUCHSCREEN_COOR_Y);
+    timer4_initialize_start(10);
+    while( FLAG_10_MS == 0 );
+    uint16_t yLocation = touchscreen_read_result();
+
+    lcd_locate(0, 3);
+    lcd_printf("X: %u  Y: %u", xLocation, yLocation);
+
+}
+
+
 
 /*
  * main loop
@@ -262,28 +300,35 @@ void main_loop()
     lcd_printf("Lab05: Touchscreen &\r\n");
     lcd_printf("       Servos");
     lcd_locate(0, 2);
-    lcd_printf("Group: GroupName");
+    lcd_printf("Group: someone");
     
     // initialize touchscreen
     
     // initialize servos
-    
+    timer1_initialize_start(5000);
+
     while(TRUE) {
-        uint16_t i=0;
-        servo_initalize(0);
-        servo_set_duty_cycle(0, 4000-180);
-        servo_initalize(1);
-        servo_set_duty_cycle(1, 4000-420);
-        timer_initialize_start(640);
-        while(FLAG_WAIT_COMPLETE == 0);
-        FLAG_WAIT_COMPLETE = 0;
-        servo_initalize(0);
-        servo_set_duty_cycle(0, 4000-180);
-        servo_initalize(1);
-        servo_set_duty_cycle(1, 4000-420);
-        timer_initialize_start(640);
-        while(FLAG_WAIT_COMPLETE == 0);
-        FLAG_WAIT_COMPLETE = 0;
+        
+        while(FLAG_5_SECOND == 0);
+        FLAG_5_SECOND = 0;
+        servo_rotate_X_and_Y(0.9, 0.9);
+        printLocationTouchScreen();
+        
+        while(FLAG_5_SECOND == 0);
+        FLAG_5_SECOND = 0;
+        servo_rotate_X_and_Y(0.9, 2.1);
+        printLocationTouchScreen();
+        
+        while(FLAG_5_SECOND == 0);
+        FLAG_5_SECOND = 0;
+        servo_rotate_X_and_Y(2.1, 2.1);
+        printLocationTouchScreen();
+        
+        while(FLAG_5_SECOND == 0);
+        FLAG_5_SECOND = 0;
+        servo_rotate_X_and_Y(2.1, 0.9);
+        printLocationTouchScreen();
+        
         
     }
 }
