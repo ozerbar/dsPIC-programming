@@ -51,7 +51,7 @@ touchscreen’s X-coordinate: AN15
 touchscreen’s Y-coordinate: AN9. There is also a circuit
 designed to control the touchscreen measurement. This circuit is controlled through three I/O pins
 E1, E2, E3. For example, setting E1=1, E2=1, E3=0 puts touchscreen into the standby mode. */
-
+/*
 void touchscreen_config_direction(uint8_t direction)
 {
     
@@ -88,7 +88,7 @@ void touchscreen_config_direction(uint8_t direction)
     }
 
     //Configure AD1CON1
-    CLEARBIT(AD1CON1bits.AD12B)
+    CLEARBIT(AD1CON1bits.AD12B);
     // Set 10b Operation Mode
     AD1CON1bits.FORM = 0;
     // Set integer output
@@ -126,7 +126,7 @@ uint16_t touchscreen_read_result() //should not be read, there's return value
     while(!AD1CON1bits.DONE);       // Start to sample
     CLEARBIT(AD1CON1bits.DONE);     // Wait for conversion to finish
     return ADC1BUF0;                // Return sample
-}
+}*/
 
 
 void servo_initalize(uint8_t servoNum)
@@ -238,20 +238,20 @@ void main_loop()
     // initialize servos
     
     while(TRUE) {
-        
+        uint16_t i=0;
         servo_initalize(0);
-        servo_set_duty_cycle(0, 4000-180)
+        servo_set_duty_cycle(0, 4000-180);
         servo_initalize(1);
-        servo_set_duty_cycle(1, 4000-180)
-        for(uint16_t=0;i<100000;i++)
+        servo_set_duty_cycle(1, 4000-420);
+        for(i=0;i<1000;i++)
         {
             Nop();
         }
         servo_initalize(0);
-        servo_set_duty_cycle(0, 4000-180)
+        servo_set_duty_cycle(0, 4000-180);
         servo_initalize(1);
-        servo_set_duty_cycle(1, 4000-420)
-        for(uint16_t=0;i<100000;i++)
+        servo_set_duty_cycle(1, 4000-420);
+        for(i=0;i<1000;i++)
         {
             Nop();
         }
