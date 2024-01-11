@@ -23,8 +23,10 @@
 #define PWM_MAX_US 2000
 #define PWM_CYC_US 20000
 
-#define TOUCHSCREEN_COOR_X
-#define TOUCHSCREEN_COOR_Y
+#define TOUCHSCREEN_COOR_X 0
+#define TOUCHSCREEN_COOR_Y 1
+#define SERVO_X 0
+#define SERVO_Y 1
 
 /*
  * touch screen code
@@ -82,7 +84,7 @@ void touchscreen_config_direction(uint8_t direction)
     }
     else
     {
-        CLEARBIT(AD1PCFGHbits.PCFG9); // Set AD1 AN15 input pin as analog
+        CLEARBIT(AD1PCFGHbits.PCFG9); // Set AD1 AN9 input pin as analog
     }
 
     //Configure AD1CON1
@@ -105,11 +107,25 @@ void touchscreen_config_direction(uint8_t direction)
     // Leave AD1CON4 at its default value
     // Enable ADC
     SETBIT(AD1CON1bits.ADON);
+
+    if(direction==TOUCHSCREEN_COOR_X)
+    {
+        AD1CHS0bits.CH0SA = 0x00f;
+    }
+    else
+    {
+        AD1CHS0bits.CH0SA = 0x009;
+    }
+
 }
 
-void touchscreen_read_result() //should not be read, there's return value
+uint16_t touchscreen_read_result() //should not be read, there's return value
 {
-
+    //AD1CHS0bits.CH0SA = 0x014;
+    SETBIT(AD1CON1bits.SAMP);
+    while(!AD1CON1bits.DONE);       // Start to sample
+    CLEARBIT(AD1CON1bits.DONE);     // Wait for conversion to finish
+    return ADC1BUF0;                // Return sample
 }
 
 
@@ -119,36 +135,88 @@ void servo_initalize(uint8_t servoNum)
     //operating, the OC8 pin will be set to high for 5ms every 40ms.
     // Setup Timer 2 to control servo X, OC8
     // Setup Timer 3 to control servo Y, OC7
-    CLEARBIT(T2CONbits.TON);
-    CLEARBIT(T2CONbits.TCS);
-    CLEARBIT(T2CONbits.TGATE);
-    TMR2 = 0x00;
-    T2CONbits.TCKPS = 0b10;
-    CLEARBIT(IFS0bits.T2IF);
-    CLEARBIT(IEC0bits.T2IE);
-    PR2 = 8000;
-    // Disable Timer
-    // Select internal instruction cycle clock
-    // Disable Gated Timer mode
-    // Clear timer register
-    // Select 1:64 Prescaler
-    // Clear Timer2 interrupt status flag
-    // Disable Timer2 interrupt enable control bit
-    // Set timer period 40 ms:
-    // 8000 = 40*10^-3 * 12.8*10^6 * 1/64
-    // Setup OC8
-    CLEARBIT(TRISDbits.TRISD7); // Set OC8 as output
-    OC8R = 1000;
-    // Set the initial duty cycle to 5 ms
-    OC8RS = 1000;
-    // Load OCRS: next pwm duty cycle
-    OC8CON = 0x0006;
-    // Set OC8: PWM, no fault check, Timer2
-    SETBIT(T2CONbits.TON);
-    // Turn Timer 2 on
+    if(servoNum == SERVO_X)
+    {
+        CLEARBIT(T2CONbits.TON);
+        CLEARBIT(T2CONbits.TCS);
+        CLEARBIT(T2CONbits.TGATE);
+        TMR2 = 0x00;
+        T2CONbits.TCKPS = 0b10;
+        CLEARBIT(IFS0bits.T2IF);
+        CLEARBIT(IEC0bits.T2IE);
+        PR2 = 4000;
+        // Disable Timer
+        // Select internal instruction cycle clock
+        // Disable Gated Timer mode
+        // Clear timer register
+        // Select 1:64 Prescaler
+        // Clear Timer2 interrupt status flag
+        // Disable Timer2 interrupt enable control bit
+        // Set timer period 40 ms:
+        // 8000 = 40*10^-3 * 12.8*10^6 * 1/64
+        // Setup OC8
+        CLEARBIT(TRISDbits.TRISD7); // Set OC8 as output
+
+        // Turn Timer 2 on
+    }
+    else
+    {
+        CLEARBIT(T3CONbits.TON);
+        CLEARBIT(T3CONbits.TCS);
+        CLEARBIT(T3CONbits.TGATE);
+        TMR3 = 0x00;
+        T3CONbits.TCKPS = 0b10;
+        CLEARBIT(IFS0bits.T3IF);
+        CLEARBIT(IEC0bits.T3IE);
+        PR3 = 4000;
+        // Disable Timer
+        // Select internal instruction cycle clock
+        // Disable Gated Timer mode
+        // Clear timer register
+        // Select 1:64 Prescaler
+        // Clear Timer2 interrupt status flag
+        // Disable Timer2 interrupt enable control bit
+        // Set timer period 40 ms:
+        // 8000 = 40*10^-3 * 12.8*10^6 * 1/64
+        // Setup OC8
+        CLEARBIT(TRISDbits.TRISD6); // Set OC7 as output
+
+        // Turn Timer 2 on
+    }
+
+    
+    
+    
+
 }
 
 void servo_set_duty_cycle(uint8_t servoNum, uint16_t dutyCycle)
+{
+    if(servoNum == SERVO_X)
+    {
+
+        OC8R = dutyCycle;
+        // Set the initial duty cycle to 5 ms
+        OC8RS = dutyCycle;
+        // Load OCRS: next pwm duty cycle
+        OC8CON = 0x0006;
+        // Set OC8: PWM, no fault check, Timer2
+        SETBIT(T2CONbits.TON);
+        // Turn Timer 2 on
+    }
+    else
+    {
+
+        OC7R = dutyCycle;
+        // Set the initial duty cycle to 5 ms
+        OC7RS = dutyCycle;
+        // Load OCRS: next pwm duty cycle
+        OC7CON = 0x000e;
+        // Set OC8: PWM, no fault check, Timer2
+        SETBIT(T3CONbits.TON);
+        // Turn Timer 2 on
+    }
+}
 
 
 
@@ -170,6 +238,23 @@ void main_loop()
     // initialize servos
     
     while(TRUE) {
+        
+        servo_initalize(0);
+        servo_set_duty_cycle(0, 4000-180)
+        servo_initalize(1);
+        servo_set_duty_cycle(1, 4000-180)
+        for(uint16_t=0;i<100000;i++)
+        {
+            Nop();
+        }
+        servo_initalize(0);
+        servo_set_duty_cycle(0, 4000-180)
+        servo_initalize(1);
+        servo_set_duty_cycle(1, 4000-420)
+        for(uint16_t=0;i<100000;i++)
+        {
+            Nop();
+        }
         
     }
 }
