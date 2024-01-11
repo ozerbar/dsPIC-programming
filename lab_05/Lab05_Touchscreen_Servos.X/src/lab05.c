@@ -28,6 +28,8 @@
 #define SERVO_X 0
 #define SERVO_Y 1
 
+volatile uint8_t FLAG_WAIT_COMPLETE =0;
+
 /*
  * touch screen code
  */
@@ -219,7 +221,36 @@ void servo_set_duty_cycle(uint8_t servoNum, uint16_t dutyCycle)
 }
 
 
+void timer_initialize_start(int interval)
+{
+    // Enable RTC Oscillator -> this effectively does OSCCONbits.LPOSCEN = 1
+    // but the OSCCON register is lock protected. That means you would have to 
+    // write a specific sequence of numbers to the register OSCCONL. After that 
+    // the write access to OSCCONL will be enabled for one instruction cycle.
+    // The function __builtin_write_OSCCONL(val) does the unlocking sequence and
+    // afterwards writes the value val to that register. (OSCCONL represents the
+    // lower 8 bits of the register OSCCON)
+    __builtin_write_OSCCONL(OSCCONL | 2);
+    // configure timer
+    CLEARBIT(T1CONbits.TON);
+    T1CONbits.TCKPS = 0b11;
+    SETBIT(T1CONbits.TCS);
+    CLEARBIT(T1CONbits.TGATE);
+    T1CONbits.TSYNC = 0;
+    PR1 = interval;
+    TMR1 = 0x00;
+    IPC0bits.T1IP = 0x01;
+    CLEARBIT(IFS0bits.T1IF);
+    SETBIT(IEC0bits.T1IE);
+    SETBIT(T1CONbits.TON);
+}
 
+// interrupt service routine?
+void __attribute__((__interrupt__, __shadow__, __auto_psv__)) _T1Interrupt(void)
+{
+    FLAG_WAIT_COMPLETE = 1;
+    CLEARBIT(IFS0bits.T1IF);
+}
 
 /*
  * main loop
@@ -243,18 +274,16 @@ void main_loop()
         servo_set_duty_cycle(0, 4000-180);
         servo_initalize(1);
         servo_set_duty_cycle(1, 4000-420);
-        for(i=0;i<1000;i++)
-        {
-            Nop();
-        }
+        timer_initialize_start(640);
+        while(FLAG_WAIT_COMPLETE == 0);
+        FLAG_WAIT_COMPLETE = 0;
         servo_initalize(0);
         servo_set_duty_cycle(0, 4000-180);
         servo_initalize(1);
         servo_set_duty_cycle(1, 4000-420);
-        for(i=0;i<1000;i++)
-        {
-            Nop();
-        }
+        timer_initialize_start(640);
+        while(FLAG_WAIT_COMPLETE == 0);
+        FLAG_WAIT_COMPLETE = 0;
         
     }
 }
