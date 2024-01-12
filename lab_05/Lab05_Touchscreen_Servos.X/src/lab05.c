@@ -84,23 +84,22 @@ void touchscreen_config_direction(uint8_t direction)
         // Set up the I/O pins E1, E2, E3 so that the 
         // touchscreen X-coordinate pin connects to the ADC
         CLEARBIT(PORTEbits.RE1);
+        Nop();
         SETBIT(PORTEbits.RE2);
+        Nop();
         SETBIT(PORTEbits.RE3);
         Nop();
-        
-        lcd_locate(0, 4);
-        lcd_printf("x coor");
     }
     else
     {
         // touchscreen Y-coordinate pin connects to the ADC
         SETBIT(PORTEbits.RE1);
+        Nop();
         CLEARBIT(PORTEbits.RE2);
+        Nop();
         CLEARBIT(PORTEbits.RE3);
         Nop();
-        
-        lcd_locate(0, 5);
-        lcd_printf("y coor");
+
     }
    
     
@@ -295,25 +294,30 @@ void __attribute__((__interrupt__, __shadow__, __auto_psv__)) _T4Interrupt(void)
 void printLocationTouchScreen()
 {
     uint8_t i=0;
-    for(i=0;i<4;i++)
+    for(i=0;i<6;i++)
     {
         timer4_initialize_start(500);
         while( FLAG_10_MS == 0 );
     }
+    uint16_t xLocation = 0;
+    uint16_t yLocation = 0;
     
-    touchscreen_config_direction(TOUCHSCREEN_COOR_X);
-    timer4_initialize_start(20);
-    while( FLAG_10_MS == 0 );
-    uint16_t xLocation = touchscreen_read_result();
+    
 
-    touchscreen_config_direction(TOUCHSCREEN_COOR_Y);
+    touchscreen_config_direction(1);
     timer4_initialize_start(20);
     while( FLAG_10_MS == 0 );
-    uint16_t yLocation = touchscreen_read_result();
+    yLocation = touchscreen_read_result();
+    
+    
+    touchscreen_config_direction(0);
+    timer4_initialize_start(10);
+    while( FLAG_10_MS == 0 );
+    xLocation = touchscreen_read_result();
 
     lcd_locate(0, 3);
     //lcd_printf("X: %03u", xLocation);
-    lcd_printf("X/Y: %03u/%03u", xLocation, yLocation);
+    lcd_printf("X/Y: %3u/%3u", xLocation, yLocation);
 
 }
 
