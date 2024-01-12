@@ -24,7 +24,7 @@
     <conf name="default" type="4">
       <toolsSet>
         <developmentServer>localhost</developmentServer>
-        <targetDevice>dsPIC30F2023</targetDevice>
+        <targetDevice>dsPIC33FJ256MC710</targetDevice>
         <targetHeader></targetHeader>
         <targetPluginBoard></targetPluginBoard>
         <platformTool>ICD3PlatformTool</platformTool>
@@ -33,7 +33,7 @@
         <platform>2</platform>
       </toolsSet>
       <packs>
-        <pack name="dsPIC30F_DFP" vendor="Microchip" version="1.0.10"/>
+        <pack name="dsPIC33F-GP-MC_DFP" vendor="Microchip" version="1.0.5"/>
       </packs>
       <compileType>
         <linkerTool>

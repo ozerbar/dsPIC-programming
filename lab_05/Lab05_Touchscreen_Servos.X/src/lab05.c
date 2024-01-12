@@ -36,15 +36,20 @@
 volatile uint8_t FLAG_5_SECOND = 0;
 volatile uint8_t FLAG_10_MS = 0;
 
-uint16_t calc_timer_value(uint8_t clockSource, uint8_t preScaler, float periodMS)
+uint16_t calc_timer_value(uint8_t clockSource, uint16_t preScaler, float periodMS)
 {
     uint16_t timerValue = 0;
 
 
     if(clockSource == INTERNAL_CLOCK)
-        timerValue = (uint16_t)( (float)(12800000) / (float)(preScaler) * (float)(periodMS) / 1000.0 );
+    {
+        timerValue = (uint16_t)( ((float)(12800000) / (float)(preScaler)) * (periodMS) / 1000 );
+    }
+        
     else
-        timerValue = (uint16_t)( (float)(32768) / (float)(preScaler) * (float)(periodMS) / 1000.0 );
+    {
+        timerValue = (uint16_t)( ((float)(32768) / (float)(preScaler)) * (periodMS) / 1000 );
+    }
     
     return timerValue;
 
@@ -61,11 +66,13 @@ void touchscreen_initalize()
     CLEARBIT(TRISEbits.TRISE1); // I/O pin set to output
     CLEARBIT(TRISEbits.TRISE2); // I/O pin set to output
     CLEARBIT(TRISEbits.TRISE3); // I/O pin set to output
+    Nop();
 
     //setting E1=1, E2=1, E3=0 puts touchscreen into the standby mode
     SETBIT(PORTEbits.RE1);
     SETBIT(PORTEbits.RE2);
     CLEARBIT(PORTEbits.RE3);
+    Nop();
 }
 
 // changes the dimension in which the touchscreen reads from
@@ -79,6 +86,7 @@ void touchscreen_config_direction(uint8_t direction)
         CLEARBIT(PORTEbits.RE1);
         SETBIT(PORTEbits.RE2);
         SETBIT(PORTEbits.RE3);
+        Nop();
     }
     else
     {
@@ -86,21 +94,23 @@ void touchscreen_config_direction(uint8_t direction)
         SETBIT(PORTEbits.RE1);
         CLEARBIT(PORTEbits.RE2);
         CLEARBIT(PORTEbits.RE3);
+        Nop();
     }
    
     
     // Disable ADC
     CLEARBIT(AD1CON1bits.ADON);
     //initialize PIN
-    SETBIT(TRISEbits.TRISE8);
-    // Set TRISE RE8 to input
+    
 
     if(direction==TOUCHSCREEN_COOR_X)
     {
+        SETBIT(TRISBbits.TRISB15);
         CLEARBIT(AD1PCFGLbits.PCFG15); // Set AD1 AN15 input pin as analog
     }
     else
     {
+        SETBIT(TRISBbits.TRISB9); 
         CLEARBIT(AD1PCFGLbits.PCFG9); // Set AD1 AN9 input pin as analog
     }
 
@@ -127,11 +137,11 @@ void touchscreen_config_direction(uint8_t direction)
 
     if(direction==TOUCHSCREEN_COOR_X)
     {
-        AD1CHS0bits.CH0SA = 0x00f;
+        AD1CHS0bits.CH0SA = 0x0f;
     }
     else
     {
-        AD1CHS0bits.CH0SA = 0x009;
+        AD1CHS0bits.CH0SA = 0x09;
     }
 
 }
@@ -141,8 +151,11 @@ uint16_t touchscreen_read_result() //should not be read, there's return value
 {
     //AD1CHS0bits.CH0SA = 0x014;
     SETBIT(AD1CON1bits.SAMP);
+    
     while(!AD1CON1bits.DONE);       // Start to sample
+    
     CLEARBIT(AD1CON1bits.DONE);     // Wait for conversion to finish
+    CLEARBIT(AD1CON1bits.SAMP);
     return ADC1BUF0;                // Return sample
 }
 
@@ -206,7 +219,7 @@ void servo_set_duty_cycle(uint8_t servoNum, uint16_t dutyCycle)
 
 // helper function
 // actuate servo X and Y to rotate designated angle
-void servo_rotate_X_and_Y(float servoXPauseMS, float servoXPauseMS)
+void servo_rotate_X_and_Y(float servoXPauseMS, float servoYPauseMS)
 {
     servo_initalize(0);
     servo_set_duty_cycle(0, calc_timer_value(INTERNAL_CLOCK, 64, 20.0-servoXPauseMS));
@@ -232,7 +245,7 @@ void timer1_initialize_start(float intervalMS)
     SETBIT(T1CONbits.TCS);
     CLEARBIT(T1CONbits.TGATE);
     T1CONbits.TSYNC = 0;
-    PR1 = calc_timer_value(EXTERNAL_CLOCK, 256, intervalMS);
+    PR1 = calc_timer_value(EXTERNAL_CLOCK, 256, 5000);
     TMR1 = 0x00;
     IPC0bits.T1IP = 0x01;
     CLEARBIT(IFS0bits.T1IF);
@@ -268,23 +281,30 @@ void timer4_initialize_start(float intervalMS)
 void __attribute__((__interrupt__, __shadow__, __auto_psv__)) _T4Interrupt(void)
 {
     FLAG_10_MS = 1;
-    CLEARBIT(IFS0bits.T1IF);
+    CLEARBIT(IFS1bits.T4IF);
 }
 
 void printLocationTouchScreen()
 {
+    uint8_t i=0;
+    for(i=0;i<4;i++)
+    {
+        timer4_initialize_start(500);
+        while( FLAG_10_MS == 0 );
+    }
+    
     touchscreen_config_direction(TOUCHSCREEN_COOR_X);
-    timer4_initialize_start(10);
+    timer4_initialize_start(20);
     while( FLAG_10_MS == 0 );
     uint16_t xLocation = touchscreen_read_result();
 
     touchscreen_config_direction(TOUCHSCREEN_COOR_Y);
-    timer4_initialize_start(10);
+    timer4_initialize_start(20);
     while( FLAG_10_MS == 0 );
     uint16_t yLocation = touchscreen_read_result();
 
     lcd_locate(0, 3);
-    lcd_printf("X: %u  Y: %u", xLocation, yLocation);
+    lcd_printf("X/Y: %03u/%03u", xLocation, yLocation);
 
 }
 
@@ -303,30 +323,30 @@ void main_loop()
     lcd_printf("Group: someone");
     
     // initialize touchscreen
-    
+    touchscreen_initalize();
     // initialize servos
-    timer1_initialize_start(5000);
+    timer1_initialize_start((float)5000);
 
     while(TRUE) {
         
         while(FLAG_5_SECOND == 0);
         FLAG_5_SECOND = 0;
-        servo_rotate_X_and_Y(0.9, 0.9);
+        servo_rotate_X_and_Y(1.1, 1.1);
         printLocationTouchScreen();
         
         while(FLAG_5_SECOND == 0);
         FLAG_5_SECOND = 0;
-        servo_rotate_X_and_Y(0.9, 2.1);
+        servo_rotate_X_and_Y(1.1, 1.9);
         printLocationTouchScreen();
         
         while(FLAG_5_SECOND == 0);
         FLAG_5_SECOND = 0;
-        servo_rotate_X_and_Y(2.1, 2.1);
+        servo_rotate_X_and_Y(2.1, 1.9);
         printLocationTouchScreen();
         
         while(FLAG_5_SECOND == 0);
         FLAG_5_SECOND = 0;
-        servo_rotate_X_and_Y(2.1, 0.9);
+        servo_rotate_X_and_Y(2.1, 1.1);
         printLocationTouchScreen();
         
         
