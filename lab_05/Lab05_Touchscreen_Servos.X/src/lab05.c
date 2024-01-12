@@ -69,10 +69,10 @@ void touchscreen_initalize()
     Nop();
 
     //setting E1=1, E2=1, E3=0 puts touchscreen into the standby mode
-    SETBIT(PORTEbits.RE1);
-    SETBIT(PORTEbits.RE2);
-    CLEARBIT(PORTEbits.RE3);
-    Nop();
+    //SETBIT(PORTEbits.RE1);
+    //SETBIT(PORTEbits.RE2);
+    //CLEARBIT(PORTEbits.RE3);
+    //Nop();
 }
 
 // changes the dimension in which the touchscreen reads from
@@ -87,6 +87,9 @@ void touchscreen_config_direction(uint8_t direction)
         SETBIT(PORTEbits.RE2);
         SETBIT(PORTEbits.RE3);
         Nop();
+        
+        lcd_locate(0, 4);
+        lcd_printf("x coor");
     }
     else
     {
@@ -95,6 +98,9 @@ void touchscreen_config_direction(uint8_t direction)
         CLEARBIT(PORTEbits.RE2);
         CLEARBIT(PORTEbits.RE3);
         Nop();
+        
+        lcd_locate(0, 5);
+        lcd_printf("y coor");
     }
    
     
@@ -137,26 +143,28 @@ void touchscreen_config_direction(uint8_t direction)
 
     if(direction==TOUCHSCREEN_COOR_X)
     {
-        AD1CHS0bits.CH0SA = 0x0f;
+        AD1CHS0bits.CH0SA = 0b01111;
     }
     else
     {
-        AD1CHS0bits.CH0SA = 0x09;
+        AD1CHS0bits.CH0SA = 0b01001;
     }
 
 }
 
 // reads the current ball position
-uint16_t touchscreen_read_result() //should not be read, there's return value
+uint16_t touchscreen_read_result() 
 {
-    //AD1CHS0bits.CH0SA = 0x014;
+
     SETBIT(AD1CON1bits.SAMP);
     
     while(!AD1CON1bits.DONE);       // Start to sample
     
     CLEARBIT(AD1CON1bits.DONE);     // Wait for conversion to finish
-    CLEARBIT(AD1CON1bits.SAMP);
-    return ADC1BUF0;                // Return sample
+
+    uint16_t result = ADC1BUF0; 
+
+    return result;                // Return sample
 }
 
 
@@ -304,6 +312,7 @@ void printLocationTouchScreen()
     uint16_t yLocation = touchscreen_read_result();
 
     lcd_locate(0, 3);
+    //lcd_printf("X: %03u", xLocation);
     lcd_printf("X/Y: %03u/%03u", xLocation, yLocation);
 
 }
