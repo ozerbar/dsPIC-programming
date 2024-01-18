@@ -205,7 +205,12 @@ void servo_set_duty_cycle(uint8_t servoNum, uint16_t dutyCycle)
 {
     if(servoNum == SERVO_X)
     {
-
+        
+        CLEARBIT(T2CONbits.TON);        // Disable Timer
+        TMR2 = 0x00;                    // Clear timer register
+        CLEARBIT(IFS0bits.T2IF);        // Clear Timer2 interrupt status flag
+        CLEARBIT(IEC0bits.T2IE);        // Disable Timer2 interrupt enable control bit
+        
         OC8R = dutyCycle;       // Set the initial duty cycle        
         OC8RS = dutyCycle;      // Load OCRS: next pwm duty cycle        
         OC8CON = 0x0006;        // Set OC8: PWM, no fault check, Timer2
@@ -213,6 +218,11 @@ void servo_set_duty_cycle(uint8_t servoNum, uint16_t dutyCycle)
     }
     else
     {
+        CLEARBIT(T3CONbits.TON);
+        TMR3 = 0x00;
+        CLEARBIT(IFS0bits.T3IF);
+        CLEARBIT(IEC0bits.T3IE);
+        
         OC7R = dutyCycle;       // Set the initial duty cycle
         OC7RS = dutyCycle;      // Load OCRS: next pwm duty cycle
         OC7CON = 0x000e;        // Set OC8: PWM, no fault check, Timer3
@@ -225,9 +235,9 @@ void servo_set_duty_cycle(uint8_t servoNum, uint16_t dutyCycle)
 void servo_rotate_X_and_Y(float servoXPauseMS, float servoYPauseMS)
 {
 
-    servo_initalize(0);
+    //servo_initalize(0);
     servo_set_duty_cycle(0, calc_timer_value(INTERNAL_CLOCK, 64, 20.0-servoXPauseMS));
-    servo_initalize(1);
+    //servo_initalize(1);
     servo_set_duty_cycle(1, calc_timer_value(INTERNAL_CLOCK, 64, 20.0-servoYPauseMS));
     
 }
@@ -337,6 +347,8 @@ void main_loop()
     touchscreen_initalize();
     // initialize servos
     timer1_initialize_start((float)5000);
+    servo_initalize(0);
+    servo_initalize(1);
 
     while(TRUE) {
         
