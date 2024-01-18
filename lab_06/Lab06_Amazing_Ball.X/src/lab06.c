@@ -86,7 +86,7 @@ void timer1_initialize_start()
     CLEARBIT(T1CONbits.TGATE);
     TMR1 = 0x00;
     T1CONbits.TCKPS = 0b11;     // prescaler 256
-    PR1 = 500
+    PR1 = 500;
     IPC0bits.T1IP = 0x01;
     CLEARBIT(IFS0bits.T1IF);
     SETBIT(IEC0bits.T1IE);
@@ -117,11 +117,11 @@ uint16_t give_goal(uint8_t direction)
     
     if(direction==TOUCHSCREEN_COOR_X)
     {
-        return (uint16_t)((X_MIN+X_MAX)/2)
+        return (uint16_t)((X_MIN+X_MAX)/2);
     }
     else
     {
-        return (uint16_t)((Y_MIN+Y_MAX)/2)
+        return (uint16_t)((Y_MIN+Y_MAX)/2);
 
     }
 }
@@ -322,17 +322,24 @@ uint16_t touchscreen_read_result()
  */
 float calc_duty(uint8_t direction, float err0, float err1)
 {
-    float P_PARA = 10;
-    float D_PARA = 10;
+    //float P_PARA = 0.45;
+    //float D_PARA = 1.3;
+    
+    
+    
+    float prop;
     
     
     if(direction==TOUCHSCREEN_COOR_X)
     {
-        uint16_t center =  (uint16_t)((X_MIN+X_MAX)/2);
+        float P_PARA = 0.8;
+        float D_PARA = 8;
         float range = (-X_MIN+X_MAX)/2;
-        float prop = P_PARA * (float(err0) / range) + D_PARA * (float(err1) / range);
+        prop = P_PARA * (err0 / range) + D_PARA * (err1 / range);
         prop = (prop > 1.0) ? 1.0 : prop ;
         prop = (prop < -1.0) ? -1.0 : prop ;
+
+        return 1.76+prop*0.35 ;
         
 
 
@@ -340,16 +347,19 @@ float calc_duty(uint8_t direction, float err0, float err1)
     }
     else
     {
-        return (uint16_t)((Y_MIN+Y_MAX)/2)
-        uint16_t center =  (uint16_t)((Y_MIN+Y_MAX)/2)
+        float P_PARA = 0.8;
+        float D_PARA = 9.5;
         float range = (-Y_MIN+Y_MAX)/2;
-        float prop = P_PARA * (float(err0) / range) + D_PARA * (float(err1) / range);
+        prop = P_PARA * (err0 / range) + D_PARA * (err1 / range);
         prop = (prop > 1.0) ? 1.0 : prop ;
         prop = (prop < -1.0) ? -1.0 : prop ;
 
+        
+        return 1.46+prop*0.35 ;
+
     }
 
-    return 1.5+prop*0.6 ;
+
 }
 
 
@@ -359,7 +369,7 @@ float calc_duty(uint8_t direction, float err0, float err1)
 uint16_t SINGLE_FILTER(uint16_t POS, uint16_t POS_1, uint16_t FILT_1)
 {
     float res_f = 0.1602*(float)(POS+POS_1) + 0.6796*(float)(FILT_1);
-    return (uint16_t)res_f
+    return (uint16_t)res_f;
 }
 
 
@@ -421,7 +431,7 @@ void main_loop()
             X_GOAL = give_goal(COOR_CHOOSE);
             X_ERR_1 = X_ERR_0;
             X_ERR_0 = (float)X_GOAL - (float)X_FILT_0;
-            float cyclecalc = calc_duty(COOR_CHOOSE, X_ERR_0, X_ERR_1);
+            float cyclecalc = calc_duty(COOR_CHOOSE, X_ERR_0, X_ERR_0 - X_ERR_1);
             servo_set_duty_cycle(0, calc_timer_value(INTERNAL_CLOCK, 64, 20.0-cyclecalc));
 
 
@@ -439,13 +449,13 @@ void main_loop()
             Y_GOAL = give_goal(COOR_CHOOSE);
             Y_ERR_1 = Y_ERR_0;
             Y_ERR_0 = (float)Y_GOAL - (float)Y_FILT_0;
-            float cyclecalc = calc_duty(COOR_CHOOSE, Y_ERR_0, Y_ERR_1);
+            float cyclecalc = calc_duty(COOR_CHOOSE, Y_ERR_0, Y_ERR_0- Y_ERR_1);
             servo_set_duty_cycle(1, calc_timer_value(INTERNAL_CLOCK, 64, 20.0-cyclecalc));
 
 
         }
 
-        COOR_CHOOSE = 1 - COOR_CHOOSE;
+        
         FLAG_FIN = 1;
         
     }

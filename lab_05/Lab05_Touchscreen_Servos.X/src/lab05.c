@@ -354,10 +354,10 @@ void main_loop()
         
         while(FLAG_5_SECOND == 0);
         FLAG_5_SECOND = 0;
-        servo_rotate_X_and_Y(1.1, 1.1);
+        servo_rotate_X_and_Y(1.76, 1.46);
         printLocationTouchScreen();
         
-        while(FLAG_5_SECOND == 0);
+        /*while(FLAG_5_SECOND == 0);
         FLAG_5_SECOND = 0;
         servo_rotate_X_and_Y(1.1, 1.9);
         printLocationTouchScreen();
@@ -370,7 +370,7 @@ void main_loop()
         while(FLAG_5_SECOND == 0);
         FLAG_5_SECOND = 0;
         servo_rotate_X_and_Y(2.1, 1.1);
-        printLocationTouchScreen();
+        printLocationTouchScreen();*/
         
         
     }
