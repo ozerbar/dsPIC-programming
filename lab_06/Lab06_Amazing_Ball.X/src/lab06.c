@@ -16,7 +16,10 @@
 /*
  * Parameter
  */
-
+#define X_MIN 68
+#define X_MAX 730
+#define Y_MIN 90
+#define Y_MAX 644 
 
 
 /*
@@ -109,7 +112,19 @@ void __attribute__((__interrupt__, __shadow__, __auto_psv__)) _T1Interrupt(void)
 }
 
 
+uint16_t give_goal(uint8_t direction)
+{
+    
+    if(direction==TOUCHSCREEN_COOR_X)
+    {
+        return (uint16_t)((X_MIN+X_MAX)/2)
+    }
+    else
+    {
+        return (uint16_t)((Y_MIN+Y_MAX)/2)
 
+    }
+}
 
 
 
@@ -156,7 +171,12 @@ void servo_set_duty_cycle(uint8_t servoNum, uint16_t dutyCycle)
 {
     if(servoNum == SERVO_X)
     {
-
+        
+        CLEARBIT(T2CONbits.TON);        // Disable Timer
+        TMR2 = 0x00;                    // Clear timer register
+        CLEARBIT(IFS0bits.T2IF);        // Clear Timer2 interrupt status flag
+        CLEARBIT(IEC0bits.T2IE);        // Disable Timer2 interrupt enable control bit
+        
         OC8R = dutyCycle;       // Set the initial duty cycle        
         OC8RS = dutyCycle;      // Load OCRS: next pwm duty cycle        
         OC8CON = 0x0006;        // Set OC8: PWM, no fault check, Timer2
@@ -164,6 +184,11 @@ void servo_set_duty_cycle(uint8_t servoNum, uint16_t dutyCycle)
     }
     else
     {
+        CLEARBIT(T3CONbits.TON);
+        TMR3 = 0x00;
+        CLEARBIT(IFS0bits.T3IF);
+        CLEARBIT(IEC0bits.T3IE);
+        
         OC7R = dutyCycle;       // Set the initial duty cycle
         OC7RS = dutyCycle;      // Load OCRS: next pwm duty cycle
         OC7CON = 0x000e;        // Set OC8: PWM, no fault check, Timer3
@@ -344,6 +369,13 @@ void main_loop()
     touchscreen_initalize();
     touchscreen_config_direction(TOUCHSCREEN_COOR_X);
 
+
+    // initialize servos
+    timer1_initialize_start();
+    servo_initalize(0);
+    servo_initalize(1);
+
+
     
     
     while(TRUE) {
@@ -356,7 +388,7 @@ void main_loop()
             touchscreen_config_direction(TOUCHSCREEN_COOR_Y);
             X_FILT_1 = X_FILT_0;
             X_FILT_0 = SINGLE_FILTER(X_POS_0, X_POS_1, X_FILT_1);
-            X_GOAL = 400;
+            X_GOAL = give_goal(COOR_CHOOSE);
             X_ERR_1 = X_ERR_0;
             X_ERR_0 = X_FILT_0 - X_GOAL;
 
@@ -372,6 +404,9 @@ void main_loop()
             touchscreen_config_direction(TOUCHSCREEN_COOR_X);
             Y_FILT_1 = Y_FILT_0;
             Y_FILT_0 = SINGLE_FILTER(Y_POS_0, Y_POS_1, Y_FILT_1);
+            Y_GOAL = give_goal(COOR_CHOOSE);
+            Y_ERR_1 = Y_ERR_0;
+            Y_ERR_0 = Y_FILT_0 - Y_GOAL;
             
 
 
