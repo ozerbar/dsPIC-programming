@@ -317,10 +317,40 @@ uint16_t touchscreen_read_result()
 }
 
 
-/*
+/* 
  * PD Controller
  */
+float calc_duty(uint8_t direction, float err0, float err1)
+{
+    float P_PARA = 10;
+    float D_PARA = 10;
+    
+    
+    if(direction==TOUCHSCREEN_COOR_X)
+    {
+        uint16_t center =  (uint16_t)((X_MIN+X_MAX)/2);
+        float range = (-X_MIN+X_MAX)/2;
+        float prop = P_PARA * (float(err0) / range) + D_PARA * (float(err1) / range);
+        prop = (prop > 1.0) ? 1.0 : prop ;
+        prop = (prop < -1.0) ? -1.0 : prop ;
+        
 
+
+
+    }
+    else
+    {
+        return (uint16_t)((Y_MIN+Y_MAX)/2)
+        uint16_t center =  (uint16_t)((Y_MIN+Y_MAX)/2)
+        float range = (-Y_MIN+Y_MAX)/2;
+        float prop = P_PARA * (float(err0) / range) + D_PARA * (float(err1) / range);
+        prop = (prop > 1.0) ? 1.0 : prop ;
+        prop = (prop < -1.0) ? -1.0 : prop ;
+
+    }
+
+    return 1.5+prop*0.6 ;
+}
 
 
 /*
@@ -359,10 +389,10 @@ void main_loop()
     uint16_t X_GOAL = 0;
     uint16_t Y_GOAL = 0;
 
-    uint16_t X_ERR_0 = 0;
-    uint16_t X_ERR_1 = 0;
-    uint16_t Y_ERR_0 = 0;
-    uint16_t Y_ERR_1 = 0;
+    float X_ERR_0 = 0;
+    float X_ERR_1 = 0;
+    float Y_ERR_0 = 0;
+    float Y_ERR_1 = 0;
 
     uint16_t resTemp = 0;
 
@@ -390,7 +420,9 @@ void main_loop()
             X_FILT_0 = SINGLE_FILTER(X_POS_0, X_POS_1, X_FILT_1);
             X_GOAL = give_goal(COOR_CHOOSE);
             X_ERR_1 = X_ERR_0;
-            X_ERR_0 = X_FILT_0 - X_GOAL;
+            X_ERR_0 = (float)X_GOAL - (float)X_FILT_0;
+            float cyclecalc = calc_duty(COOR_CHOOSE, X_ERR_0, X_ERR_1);
+            servo_set_duty_cycle(0, calc_timer_value(INTERNAL_CLOCK, 64, 20.0-cyclecalc));
 
 
 
@@ -406,9 +438,9 @@ void main_loop()
             Y_FILT_0 = SINGLE_FILTER(Y_POS_0, Y_POS_1, Y_FILT_1);
             Y_GOAL = give_goal(COOR_CHOOSE);
             Y_ERR_1 = Y_ERR_0;
-            Y_ERR_0 = Y_FILT_0 - Y_GOAL;
-            
-
+            Y_ERR_0 = (float)Y_GOAL - (float)Y_FILT_0;
+            float cyclecalc = calc_duty(COOR_CHOOSE, Y_ERR_0, Y_ERR_1);
+            servo_set_duty_cycle(1, calc_timer_value(INTERNAL_CLOCK, 64, 20.0-cyclecalc));
 
 
         }
