@@ -22,6 +22,13 @@
 #define Y_MAX 644 
 
 
+#define X_CENTER 399
+#define Y_CENTER 367
+#define X_RADIUS 250
+#define Y_RADIUS 200
+
+#define CYCLE_10MS 2000
+
 /*
  * Common Definitions
  */
@@ -46,6 +53,8 @@ volatile uint8_t FLAG_START = 0;
 volatile uint8_t FLAG_FIN = 1;
 volatile uint8_t COOR_CHOOSE = TOUCHSCREEN_COOR_Y;
 volatile uint32_t MISSED = 0;
+
+volatile uint16_t time = 0;
 
 /*
  * Helper Function
@@ -106,6 +115,9 @@ void __attribute__((__interrupt__, __shadow__, __auto_psv__)) _T1Interrupt(void)
         COOR_CHOOSE = 1 - COOR_CHOOSE;
         FLAG_START = 1;
     }
+
+    time++;
+    time = time % CYCLE_10MS;
     
     
     CLEARBIT(IFS0bits.T1IF);
@@ -117,11 +129,18 @@ uint16_t give_goal(uint8_t direction)
     
     if(direction==TOUCHSCREEN_COOR_X)
     {
-        return (uint16_t)((X_MIN+X_MAX)/2);
+        //return (uint16_t)((X_MIN+X_MAX)/2);
+
+        return (uint16_t)(sin(2*3.14*time/CYCLE_10MS) * X_RADIUS + X_CENTER)
+
+
+
     }
     else
     {
-        return (uint16_t)((Y_MIN+Y_MAX)/2);
+        
+        return (uint16_t)(cos(2*3.14*time/CYCLE_10MS) * Y_RADIUS + Y_CENTER)
+        //return (uint16_t)((Y_MIN+Y_MAX)/2);
 
     }
 }
@@ -433,9 +452,6 @@ void main_loop()
             X_ERR_0 = (float)X_GOAL - (float)X_FILT_0;
             float cyclecalc = calc_duty(COOR_CHOOSE, X_ERR_0, X_ERR_0 - X_ERR_1);
             servo_set_duty_cycle(0, calc_timer_value(INTERNAL_CLOCK, 64, 20.0-cyclecalc));
-
-
-
 
             
         }
