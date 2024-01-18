@@ -62,17 +62,13 @@ uint16_t calc_timer_value(uint8_t clockSource, uint16_t preScaler, float periodM
 // initializes and configures the touchscreen
 void touchscreen_initalize()
 {
+
     // Set up the I/O pins E1, E2, E3 to be output pins
     CLEARBIT(TRISEbits.TRISE1); // I/O pin set to output
     CLEARBIT(TRISEbits.TRISE2); // I/O pin set to output
     CLEARBIT(TRISEbits.TRISE3); // I/O pin set to output
     Nop();
 
-    //setting E1=1, E2=1, E3=0 puts touchscreen into the standby mode
-    //SETBIT(PORTEbits.RE1);
-    //SETBIT(PORTEbits.RE2);
-    //CLEARBIT(PORTEbits.RE3);
-    //Nop();
 }
 
 // changes the dimension in which the touchscreen reads from
@@ -228,10 +224,12 @@ void servo_set_duty_cycle(uint8_t servoNum, uint16_t dutyCycle)
 // actuate servo X and Y to rotate designated angle
 void servo_rotate_X_and_Y(float servoXPauseMS, float servoYPauseMS)
 {
+
     servo_initalize(0);
     servo_set_duty_cycle(0, calc_timer_value(INTERNAL_CLOCK, 64, 20.0-servoXPauseMS));
     servo_initalize(1);
     servo_set_duty_cycle(1, calc_timer_value(INTERNAL_CLOCK, 64, 20.0-servoYPauseMS));
+    
 }
 
 
