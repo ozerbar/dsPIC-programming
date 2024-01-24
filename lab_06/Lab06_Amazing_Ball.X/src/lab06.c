@@ -118,6 +118,11 @@ void __attribute__((__interrupt__, __shadow__, __auto_psv__)) _T1Interrupt(void)
 
     time++;
     time = time % CYCLE_10MS;
+
+    if( time % 20 == 0 )
+    {
+        lcd_printf("%u", MISSED);
+    }
     
     
     CLEARBIT(IFS0bits.T1IF);
@@ -129,16 +134,14 @@ uint16_t give_goal(uint8_t direction)
     
     if(direction==TOUCHSCREEN_COOR_X)
     {
+        
         //return (uint16_t)((X_MIN+X_MAX)/2);
-
         return (uint16_t)(sin(2*3.14*time/CYCLE_10MS) * X_RADIUS + X_CENTER)
-
-
 
     }
     else
     {
-        
+
         return (uint16_t)(cos(2*3.14*time/CYCLE_10MS) * Y_RADIUS + Y_CENTER)
         //return (uint16_t)((Y_MIN+Y_MAX)/2);
 
@@ -402,8 +405,10 @@ void main_loop()
     // print assignment information
     lcd_printf("Lab06: Amazing Ball");
     lcd_locate(0, 1);
-    lcd_printf("Group: GroupName");
-    lcd_locate(0, 2);
+    lcd_printf("Someone");
+    lcd_locate(0, 4);
+    lcd_printf("Missed Deadline");
+    lcd_locate(0, 5);
 
     uint16_t X_POS_0 = 0;
     uint16_t X_POS_1 = 0;
