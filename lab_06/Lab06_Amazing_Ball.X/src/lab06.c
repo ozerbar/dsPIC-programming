@@ -52,7 +52,7 @@
 volatile uint8_t FLAG_START = 0;
 volatile uint8_t FLAG_FIN = 1;
 volatile uint8_t COOR_CHOOSE = TOUCHSCREEN_COOR_Y;
-volatile uint32_t MISSED = 0;
+volatile uint16_t MISSED = 0;
 
 volatile uint16_t time = 0;
 
@@ -405,8 +405,8 @@ void main_loop()
 {
     // print assignment information
     lcd_printf("Lab06: Amazing Ball");
-    lcd_locate(0, 1);
-    lcd_printf("Someone");
+    lcd_locate(0, 1); 
+    lcd_printf("Zhihang, Shikang, Baran");
     lcd_locate(0, 4);
     lcd_printf("Missed Deadline");
     lcd_locate(0, 5);
