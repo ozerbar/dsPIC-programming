@@ -23,11 +23,11 @@
 
 
 #define X_CENTER 399
-#define Y_CENTER 367
-#define X_RADIUS 250
-#define Y_RADIUS 200
+#define Y_CENTER 377
+#define X_RADIUS 100
+#define Y_RADIUS 130
 
-#define CYCLE_10MS 2000
+#define CYCLE_10MS 800
 
 /*
  * Common Definitions
@@ -121,6 +121,7 @@ void __attribute__((__interrupt__, __shadow__, __auto_psv__)) _T1Interrupt(void)
 
     if( time % 20 == 0 )
     {
+        lcd_locate(0, 5);
         lcd_printf("%u", MISSED);
     }
     
@@ -136,13 +137,13 @@ uint16_t give_goal(uint8_t direction)
     {
         
         //return (uint16_t)((X_MIN+X_MAX)/2);
-        return (uint16_t)(sin(2*3.14*time/CYCLE_10MS) * X_RADIUS + X_CENTER)
+        return (uint16_t)(sin(2*3.14*time/CYCLE_10MS) * X_RADIUS + X_CENTER);
 
     }
     else
     {
 
-        return (uint16_t)(cos(2*3.14*time/CYCLE_10MS) * Y_RADIUS + Y_CENTER)
+        return (uint16_t)(cos(2*3.14*time/CYCLE_10MS) * Y_RADIUS + Y_CENTER);
         //return (uint16_t)((Y_MIN+Y_MAX)/2);
 
     }
@@ -344,8 +345,8 @@ uint16_t touchscreen_read_result()
  */
 float calc_duty(uint8_t direction, float err0, float err1)
 {
-    //float P_PARA = 0.45;
-    //float D_PARA = 1.3;
+    float P_PARA = 0.67;
+    float D_PARA = 12;
     
     
     
@@ -354,14 +355,14 @@ float calc_duty(uint8_t direction, float err0, float err1)
     
     if(direction==TOUCHSCREEN_COOR_X)
     {
-        float P_PARA = 0.8;
-        float D_PARA = 8;
+        //float P_PARA = 0.7;
+        //float D_PARA = 10;
         float range = (-X_MIN+X_MAX)/2;
         prop = P_PARA * (err0 / range) + D_PARA * (err1 / range);
         prop = (prop > 1.0) ? 1.0 : prop ;
         prop = (prop < -1.0) ? -1.0 : prop ;
 
-        return 1.76+prop*0.35 ;
+        return 1.76+prop*0.40 ;
         
 
 
@@ -369,15 +370,15 @@ float calc_duty(uint8_t direction, float err0, float err1)
     }
     else
     {
-        float P_PARA = 0.8;
-        float D_PARA = 9.5;
+        //float P_PARA = 0.7;
+        //float D_PARA = 10;
         float range = (-Y_MIN+Y_MAX)/2;
         prop = P_PARA * (err0 / range) + D_PARA * (err1 / range);
         prop = (prop > 1.0) ? 1.0 : prop ;
         prop = (prop < -1.0) ? -1.0 : prop ;
 
         
-        return 1.46+prop*0.35 ;
+        return 1.46+prop*0.45 ;
 
     }
 
@@ -428,7 +429,6 @@ void main_loop()
     float Y_ERR_0 = 0;
     float Y_ERR_1 = 0;
 
-    uint16_t resTemp = 0;
 
     touchscreen_initalize();
     touchscreen_config_direction(TOUCHSCREEN_COOR_X);
