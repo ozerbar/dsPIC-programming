@@ -24,8 +24,7 @@
 
 #define X_CENTER 399
 #define Y_CENTER 377
-#define X_RADIUS 100
-#define Y_RADIUS 130
+#define RADIUS 100
 
 #define CYCLE_10MS 800
 
@@ -136,14 +135,14 @@ uint16_t give_goal(uint8_t direction)
     if(direction==TOUCHSCREEN_COOR_X)
     {
         
+        return (uint16_t)(sin(2*3.14*time/CYCLE_10MS) * RADIUS + X_CENTER);
         //return (uint16_t)((X_MIN+X_MAX)/2);
-        return (uint16_t)(sin(2*3.14*time/CYCLE_10MS) * X_RADIUS + X_CENTER);
 
     }
     else
     {
 
-        return (uint16_t)(cos(2*3.14*time/CYCLE_10MS) * Y_RADIUS + Y_CENTER);
+        return (uint16_t)(cos(2*3.14*time/CYCLE_10MS) * RADIUS + Y_CENTER);
         //return (uint16_t)((Y_MIN+Y_MAX)/2);
 
     }
@@ -347,8 +346,6 @@ float calc_duty(uint8_t direction, float err0, float err1)
 {
     float P_PARA = 0.67;
     float D_PARA = 12;
-    
-    
     
     float prop;
     
