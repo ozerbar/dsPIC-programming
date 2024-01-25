@@ -354,7 +354,7 @@ void main_loop()
         
         while(FLAG_5_SECOND == 0);
         FLAG_5_SECOND = 0;
-        servo_rotate_X_and_Y(1.76, 1.46);
+        servo_rotate_X_and_Y(1.734, 1.444);
         printLocationTouchScreen();
         
         /*while(FLAG_5_SECOND == 0);

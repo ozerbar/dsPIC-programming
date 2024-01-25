@@ -26,7 +26,7 @@
 #define Y_CENTER 377
 #define RADIUS 100
 
-#define CYCLE_10MS 800
+#define CYCLE_10MS 1200
 
 /*
  * Common Definitions
@@ -104,7 +104,7 @@ void timer1_initialize_start()
 // interrupt service routine for timer 1
 void __attribute__((__interrupt__, __shadow__, __auto_psv__)) _T1Interrupt(void)
 {
-    if(FLAG_FIN == 0) //still not finished, missed deadline
+    if(FLAG_FIN != 1) //still not finished, missed deadline
     {
         MISSED++;
     }
@@ -173,6 +173,12 @@ void servo_initalize(uint8_t servoNum)
         CLEARBIT(IEC0bits.T2IE);        // Disable Timer2 interrupt enable control bit
         PR2 = calc_timer_value(INTERNAL_CLOCK, 64, 20);    // Set timer period 20 ms:
         CLEARBIT(TRISDbits.TRISD7); // Set OC8 as output
+        
+        CLEARBIT(T2CONbits.TON);        // Disable Timer
+        TMR2 = 0x00;                    // Clear timer register
+        CLEARBIT(IFS0bits.T2IF);        // Clear Timer2 interrupt status flag
+        CLEARBIT(IEC0bits.T2IE);        // Disable Timer2 interrupt enable control bit
+        SETBIT(T2CONbits.TON);  // Turn Timer 2 on   
     }
     else
     {
@@ -185,36 +191,60 @@ void servo_initalize(uint8_t servoNum)
         CLEARBIT(IEC0bits.T3IE);
         PR3 = calc_timer_value(INTERNAL_CLOCK, 64, 20);
         CLEARBIT(TRISDbits.TRISD6); // Set OC7 as output
+        
+        CLEARBIT(T3CONbits.TON);
+        TMR3 = 0x00;
+        CLEARBIT(IFS0bits.T3IF);
+        CLEARBIT(IEC0bits.T3IE);
+        SETBIT(T3CONbits.TON);  // Turn Timer 3 on
     }
 }
 
 // sets the duty cycle of the servo
+void servo_set_init_duty_cycle(uint8_t servoNum, uint16_t dutyCycle)
+{
+    if(servoNum == SERVO_X)
+    {
+        
+        
+        
+        OC8R = dutyCycle;       // Set the initial duty cycle        
+        OC8RS = dutyCycle;      // Load OCRS: next pwm duty cycle        
+        OC8CON = 0x0006;        // Set OC8: PWM, no fault check, Timer2
+             
+    }
+    else
+    {
+        
+        
+        OC7R = dutyCycle;       // Set the initial duty cycle
+        OC7RS = dutyCycle;      // Load OCRS: next pwm duty cycle
+        OC7CON = 0x000e;        // Set OC8: PWM, no fault check, Timer3
+        
+    }
+}
+
+
 void servo_set_duty_cycle(uint8_t servoNum, uint16_t dutyCycle)
 {
     if(servoNum == SERVO_X)
     {
         
-        CLEARBIT(T2CONbits.TON);        // Disable Timer
-        TMR2 = 0x00;                    // Clear timer register
-        CLEARBIT(IFS0bits.T2IF);        // Clear Timer2 interrupt status flag
-        CLEARBIT(IEC0bits.T2IE);        // Disable Timer2 interrupt enable control bit
         
-        OC8R = dutyCycle;       // Set the initial duty cycle        
+        
+       
         OC8RS = dutyCycle;      // Load OCRS: next pwm duty cycle        
-        OC8CON = 0x0006;        // Set OC8: PWM, no fault check, Timer2
-        SETBIT(T2CONbits.TON);  // Turn Timer 2 on        
+
+             
     }
     else
     {
-        CLEARBIT(T3CONbits.TON);
-        TMR3 = 0x00;
-        CLEARBIT(IFS0bits.T3IF);
-        CLEARBIT(IEC0bits.T3IE);
         
-        OC7R = dutyCycle;       // Set the initial duty cycle
+        
+
         OC7RS = dutyCycle;      // Load OCRS: next pwm duty cycle
-        OC7CON = 0x000e;        // Set OC8: PWM, no fault check, Timer3
-        SETBIT(T3CONbits.TON);  // Turn Timer 3 on
+
+        
     }
 }
 
@@ -344,22 +374,23 @@ uint16_t touchscreen_read_result()
  */
 float calc_duty(uint8_t direction, float err0, float err1)
 {
-    float P_PARA = 0.67;
-    float D_PARA = 12;
+    float P_PARA = 1.1;
+    float D_PARA = 16;
     
     float prop;
     
     
     if(direction==TOUCHSCREEN_COOR_X)
     {
-        //float P_PARA = 0.7;
-        //float D_PARA = 10;
+        //float P_PARA = 0.6;
+        //float D_PARA = 9;
         float range = (-X_MIN+X_MAX)/2;
         prop = P_PARA * (err0 / range) + D_PARA * (err1 / range);
         prop = (prop > 1.0) ? 1.0 : prop ;
         prop = (prop < -1.0) ? -1.0 : prop ;
 
-        return 1.76+prop*0.40 ;
+      
+        return 1.734+prop*0.35 ;
         
 
 
@@ -367,15 +398,15 @@ float calc_duty(uint8_t direction, float err0, float err1)
     }
     else
     {
-        //float P_PARA = 0.7;
-        //float D_PARA = 10;
+        //float P_PARA = 0.6;
+        //float D_PARA = 9;
         float range = (-Y_MIN+Y_MAX)/2;
         prop = P_PARA * (err0 / range) + D_PARA * (err1 / range);
         prop = (prop > 1.0) ? 1.0 : prop ;
         prop = (prop < -1.0) ? -1.0 : prop ;
 
-        
-        return 1.46+prop*0.45 ;
+
+        return 1.445+prop*0.35 ;
 
     }
 
@@ -435,12 +466,13 @@ void main_loop()
     timer1_initialize_start();
     servo_initalize(0);
     servo_initalize(1);
-
+    servo_set_init_duty_cycle(0,calc_timer_value(INTERNAL_CLOCK, 64, 20.0-1.734));
+    servo_set_init_duty_cycle(1,calc_timer_value(INTERNAL_CLOCK, 64, 20.0-1.444));
 
     
     
     while(TRUE) {
-        while(FLAG_START == 0);
+        while(FLAG_START != 1);
         FLAG_START = 0;
         if(COOR_CHOOSE == TOUCHSCREEN_COOR_X)
         {
